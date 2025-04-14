@@ -2,7 +2,7 @@
 
 ## 🎮 Overview
 
-This repo allo you to play any twitch vod on a web player. You can play **any** twitch vod, sub only too, even if you're not sub.
+This repo allow you to play any twitch vod on a web player. You can play **any** twitch vod, sub only too, even if you're not sub.
 
 ## 🚀 Installation
 
