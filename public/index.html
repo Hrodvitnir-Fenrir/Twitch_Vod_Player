@@ -1,0 +1,308 @@
+<!-- Fichier: public/index.html -->
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPlay - Lecteur M3U8</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.20.3/video-js.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-play-circle"></i>
+            </div>
+            <h1 class="title">StreamPlay</h1>
+            <button id="help-btn" class="help-button">
+                <i class="fas fa-question-circle"></i> Comment utiliser?
+            </button>
+        </div>
+
+        <!-- Tutorial Modal -->
+        <div id="tutorial-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-info-circle"></i> Comment obtenir le lien d'une vidéo</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="tutorial-step">
+                        <h3><span class="step-number">1</span> Allez sur Twitch</h3>
+                        <p>Rendez-vous sur le site <a href="https://www.twitch.tv" target="_blank">Twitch.tv</a></p>
+                    </div>
+
+                    <div class="tutorial-step">
+                        <h3><span class="step-number">2</span> Trouvez un streamer</h3>
+                        <p>Naviguez vers la chaîne du streamer dont vous souhaitez regarder les vidéos archivées</p>
+                    </div>
+
+                    <div class="tutorial-step">
+                        <h3><span class="step-number">3</span> Accédez à l'onglet "Vidéos"</h3>
+                        <p>Cliquez sur l'onglet "Vidéos" sur la page du streamer pour voir ses vidéos archivées</p>
+                        <div class="tutorial-image">
+                            <img src="https://i.imgur.com/JcID9ai.jpeg" alt="Onglet Vidéos">
+                        </div>
+                    </div>
+
+                    <div class="tutorial-step">
+                        <h3><span class="step-number">4</span> Sélectionnez une vidéo</h3>
+                        <p>Choisissez la vidéo que vous souhaitez regarder</p>
+                    </div>
+
+                    <div class="tutorial-step">
+                        <h3><span class="step-number">5</span> Cliquez droit sur une miniature</h3>
+                        <p>Effectuez un clic droit sur l'une des miniatures de la vidéo (images de prévisualisation) et
+                            sélectionnez "Copier l'adresse de l'image" ou "Copier le lien de l'image"</p>
+                        <div class="tutorial-image">
+                            <img src="https://i.imgur.com/n7hbdls.png" alt="Copier l'adresse de l'image">
+                        </div>
+                    </div>
+
+                    <div class="tutorial-step">
+                        <h3><span class="step-number">6</span> Collez le lien dans StreamPlay</h3>
+                        <p>Revenez sur StreamPlay et collez le lien dans le champ prévu à cet effet</p>
+                        <div class="example-link">
+                            <p>Exemple de lien:</p>
+                            <code>https://dgeft87wbj63p.cloudfront.net/8961416fcc60115f1231_laink_318609068665_1744454057/storyboards/2430765061-strip-0.jpg</code>
+                        </div>
+                    </div>
+
+                    <div class="tutorial-step">
+                        <h3><span class="step-number">7</span> Cliquez sur "Transformer et jouer"</h3>
+                        <p>L'application convertira le lien et lancera la lecture de la vidéo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label for="url-input">Collez le lien de l'image:</label>
+                <input type="text" id="url-input"
+                    placeholder="https://dgeft87wbj63p.cloudfront.net/.../storyboards/2430765061-strip-0.jpg">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="use-proxy" checked>
+                    <label for="use-proxy">Utiliser le proxy (recommandé pour éviter les erreurs CORS)</label>
+                </div>
+                <button id="transform-btn">
+                    <i class="fas fa-sync-alt"></i> Transformer et jouer
+                </button>
+                <div id="status"></div>
+            </div>
+        </div>
+
+        <div class="card url-display">
+            <h3><i class="fas fa-link"></i> URL originale:</h3>
+            <div id="originalUrl" class="url-box">Aucune URL saisie</div>
+            <h3><i class="fas fa-exchange-alt"></i> URL transformée:</h3>
+            <div id="transformedUrl" class="url-box">En attente de transformation...</div>
+        </div>
+
+        <div class="video-container">
+            <video id="video-player" class="video-js vjs-default-skin vjs-big-play-centered" controls></video>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 StreamPlay - Lecteur de streaming avancé pour fichiers M3U8</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.20.3/video.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlInput = document.getElementById('url-input');
+            const transformBtn = document.getElementById('transform-btn');
+            const statusDiv = document.getElementById('status');
+            const originalUrlDiv = document.getElementById('originalUrl');
+            const transformedUrlDiv = document.getElementById('transformedUrl');
+            const useProxyCheckbox = document.getElementById('use-proxy');
+            const helpBtn = document.getElementById('help-btn');
+            const tutorialModal = document.getElementById('tutorial-modal');
+            const closeModal = document.querySelector('.close');
+            let player = null;
+
+            // Gestion du modal tutoriel
+            helpBtn.addEventListener('click', function () {
+                tutorialModal.style.display = 'block';
+            });
+
+            closeModal.addEventListener('click', function () {
+                tutorialModal.style.display = 'none';
+            });
+
+            window.addEventListener('click', function (event) {
+                if (event.target == tutorialModal) {
+                    tutorialModal.style.display = 'none';
+                }
+            });
+
+            // Initialiser le lecteur
+
+            function initializePlayer(url) {
+                if (player) {
+                    player.dispose();
+                }
+
+                player = videojs('video-player', {
+                    controls: true,
+                    autoplay: false,
+                    preload: 'auto',
+                    playbackRates: [0.5, 1, 1.5, 2],
+                    liveui: true,
+                    poster: "https://via.placeholder.com/1280x720/121212/6200ee?text=StreamPlay"
+                });
+
+                player.src({
+                    src: url,
+                    type: 'application/x-mpegURL'
+                });
+
+                player.ready(function () {
+                    console.log('Lecteur prêt');
+
+                    // Ajouter la gestion des touches du clavier
+                    document.addEventListener('keydown', function (event) {
+                        // Ne rien faire si un élément de formulaire est en focus
+                        if (document.activeElement.tagName === 'INPUT' ||
+                            document.activeElement.tagName === 'TEXTAREA' ||
+                            document.activeElement.tagName === 'SELECT') {
+                            return;
+                        }
+
+                        const skipTime = 30; // Temps de saut en secondes
+
+                        switch (event.key) {
+                            case 'ArrowRight':
+                                // Avancer de 10 secondes
+                                player.currentTime(player.currentTime() + skipTime);
+                                event.preventDefault();
+                                break;
+                            case 'ArrowLeft':
+                                // Reculer de 10 secondes
+                                player.currentTime(player.currentTime() - skipTime);
+                                event.preventDefault();
+                                break;
+                            case 'ArrowUp':
+                                // Augmenter le volume
+                                if (player.volume() < 0.9) {
+                                    player.volume(player.volume() + 0.1);
+                                } else {
+                                    player.volume(1.0);
+                                }
+                                event.preventDefault();
+                                break;
+                            case 'ArrowDown':
+                                // Diminuer le volume
+                                if (player.volume() > 0.1) {
+                                    player.volume(player.volume() - 0.1);
+                                } else {
+                                    player.volume(0);
+                                }
+                                event.preventDefault();
+                                break;
+                            case ' ':
+                                // Espace pour jouer/pauser
+                                if (player.paused()) {
+                                    player.play();
+                                } else {
+                                    player.pause();
+                                }
+                                event.preventDefault();
+                                break;
+                            case 'f':
+                            case 'F':
+                                // F pour le mode plein écran
+                                if (player.isFullscreen()) {
+                                    player.exitFullscreen();
+                                } else {
+                                    player.requestFullscreen();
+                                }
+                                event.preventDefault();
+                                break;
+                            case 'm':
+                            case 'M':
+                                // M pour couper/rétablir le son
+                                player.muted(!player.muted());
+                                event.preventDefault();
+                                break;
+                        }
+                    });
+                });
+            }
+
+            transformBtn.addEventListener('click', async function () {
+                const url = urlInput.value.trim();
+
+                if (!url) {
+                    statusDiv.textContent = 'Veuillez saisir une URL';
+                    statusDiv.className = 'error';
+                    return;
+                }
+
+                // Afficher une animation de chargement sur le bouton
+                transformBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transformation...';
+                transformBtn.disabled = true;
+
+                originalUrlDiv.textContent = url;
+                statusDiv.textContent = 'Transformation en cours...';
+                statusDiv.className = '';
+
+                try {
+                    const response = await fetch('/api/transform-url', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // URL transformée
+                        let finalUrl = data.transformedUrl;
+                        transformedUrlDiv.textContent = data.transformedUrl;
+
+                        // Si l'option proxy est cochée, utiliser le proxy
+                        if (useProxyCheckbox.checked) {
+                            finalUrl = `/proxy?url=${encodeURIComponent(data.transformedUrl)}`;
+                            statusDiv.textContent = 'URL transformée avec succès! Utilisation du proxy pour éviter les erreurs CORS.';
+                        } else {
+                            statusDiv.textContent = 'URL transformée avec succès!';
+                        }
+
+                        statusDiv.className = 'success';
+                        initializePlayer(finalUrl);
+                    } else {
+                        statusDiv.textContent = data.error || 'Erreur lors de la transformation de l\'URL';
+                        statusDiv.className = 'error';
+                    }
+                } catch (error) {
+                    statusDiv.textContent = 'Erreur de connexion: ' + error.message;
+                    statusDiv.className = 'error';
+                }
+
+                // Rétablir le bouton
+                transformBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Transformer et jouer';
+                transformBtn.disabled = false;
+            });
+
+            // Activer la soumission du formulaire en appuyant sur Entrée
+            urlInput.addEventListener('keyup', function (event) {
+                if (event.key === 'Enter') {
+                    transformBtn.click();
+                }
+            });
+        });
+
+
+    </script>
+</body>
+
+</html>
